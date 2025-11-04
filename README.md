@@ -27,7 +27,38 @@ pip install -r requirements.txt
 ### 1. Database Setup
 
 #### Starting Neo4j Database
-
+Please change the USERNAME and PASSWORD in dockercompse
+```docker 
+  neo4j:
+    image: neo4j:5.14-community
+    container_name: web-of-papers-neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    environment:
+      # Change these passwords in production!
+      NEO4J_AUTH: username/password #TODO: Please change to your desired username/password
+      NEO4J_dbms_default__database: database_name #TODO: Please change to your desired database name
+      NEO4J_dbms_memory_heap_initial__size: 512m
+      NEO4J_dbms_memory_heap_max__size: 2G
+      NEO4J_dbms_memory_pagecache_size: 1G
+      NEO4J_dbms_security_procedures_unrestricted: gds.*,apoc.*
+      NEO4J_dbms_security_procedures_allowlist: gds.*,apoc.*
+      # Enable APOC and GDS plugins
+      NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "user_name", "-p", "password", "RETURN 1"] #TODO : Change to your username/password
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+```
 ```bash
 # Navigate to the project root
 cd semantic_navigation
