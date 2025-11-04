@@ -42,8 +42,8 @@ docker-compose -f docker/docker-compose.yml ps
 Neo4j will be available at:
 - Browser: http://localhost:7474
 - Bolt connection: bolt://localhost:7687
-- Username: neo4j
-- Password: neo4j123
+- Username: username
+- Password: password
 
 ![alt text](/assets/neo4j_ui.png)
 
