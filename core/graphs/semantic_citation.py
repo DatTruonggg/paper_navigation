@@ -2,15 +2,17 @@ from neo4j import GraphDatabase
 from tqdm import tqdm
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.sparse import csr_matrix
-
+from dotenv import load_dotenv
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from logs import log
 
-NEO4J_URI = "bolt://localhost:7687"
-NEO4J_USER = "neo4j"
-NEO4J_PASS = "neo4j123"
+load_dotenv()
+
+NEO4J_URI = os.getenv("NEO4J_URI")
+NEO4J_USER = os.getenv("NEO4J_USERNAME")
+NEO4J_PASS = os.getenv("NEO4J_PASSWORD")
 
 LIMIT_PAPERS = 100000
 MIN_SIMILARITY = 0.45
