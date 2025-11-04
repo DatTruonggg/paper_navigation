@@ -1,8 +1,11 @@
 import re
+import os
 import psycopg2
+from dotenv import load_dotenv
 from typing import Dict, Optional
+load_dotenv()
 
-DB_URL = "postgresql+psycopg2://admin:ZXCSbcoBRR3R3yFo@103.3.247.120:5432/paper_metadata"
+DB_URL = os.getenv("POSTGRE_URL")
 
 
 def detect_id_type(paper_id: str) -> str:
