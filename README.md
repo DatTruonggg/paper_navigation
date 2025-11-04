@@ -169,7 +169,7 @@ curl "http://localhost:8000/health"
 ### Exploring in Neo4j Browser
 
 1. Open http://localhost:7474 in your browser
-2. Login with neo4j/neo4j123
+2. Login with username/password
 3. Try these queries:
 
 ```cypher
