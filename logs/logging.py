@@ -12,7 +12,7 @@ _T_logoru_logger = TypeVar("_T_logoru_logger", bound=loguru._logger.Logger)
 
 
 def logger_handler(
-    use_log_file: bool = True, file: str = "./logging_file.log"
+    use_log_file: bool = True, file: str = "./logs/logging_file.log"
 ) -> _T_logoru_logger:
     if use_log_file:
         loguru.logger.add(

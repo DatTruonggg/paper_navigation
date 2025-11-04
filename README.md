@@ -1,29 +1,36 @@
 # Paper Navigation
 
-A semantic navigation system for academic papers built with Neo4j and FastAPI. This system allows you to explore paper networks, author collaborations, and research topics through a graph database.
+## Motivation
+
+The Paper Navigation system was developed to address the challenge of searching and exploring academic papers in an intelligent and efficient manner. It will connect these papers together by implementing the cosine similarity on citation-based connection
+
+This system enables:
+- **Exploring paper networks** semantically rather than just keyword-based searching
+- **Analyzing author collaborations** and research networks
+- **Finding related topics** and academic concepts visually
+- **Building knowledge graphs** from large academic datasets
 
 ## Architecture
 
-The project consists of several components:
+The system is built on a microservices architecture with the following main components:
 
 - **Neo4j Database**: Stores the paper graph with nodes (papers, authors, topics) and relationships
 - **Graph Builder**: Fetches data from OpenAlex and builds the semantic graph
 - **REST API**: Provides endpoints for paper navigation and exploration
-- **LLM Integration**: Enables semantic search and retrieval capabilities
-
-## Prerequisites
-
-- Docker and Docker Compose
-- Python 3.8+
-- Neo4j Browser (for database visualization)
 
 ## Quick Start
+### 0. Module set up 
 
-### 1. Start Neo4j Database
+```cmd
+pip install -r requirements.txt
+```
+### 1. Database Setup
+
+#### Starting Neo4j Database
 
 ```bash
 # Navigate to the project root
-cd /path/to/semantic_navigation
+cd semantic_navigation
 
 # Start Neo4j using Docker Compose
 docker-compose -f docker/docker-compose.yml up -d
@@ -38,34 +45,50 @@ Neo4j will be available at:
 - Username: neo4j
 - Password: neo4j123
 
-### 2. Build the Paper Graph
+![alt text](/assets/neo4j_ui.png)
+
+#### Database Configuration
+
+The Neo4j database is configured in `docker/docker-compose.yml` with:
+- Persistent data storage
+- APOC and Graph Data Science plugins
+- Optimized memory settings
+- Health checks
+
+### 2. Building the Paper Graph
+
+#### Method: Graph Builder
 
 ```bash
 # Navigate to the semantic link builder
-cd core/semantic_link
-
-# Install Python dependencies
-pip install requests tqdm neo4j
+cd core/graphs
 
 # Run the graph builder
-python build_graph.py
+python graph_builder.py
 ```
 
-This will:
-- Fetch NLP-related papers from OpenAlex
-- Create nodes for papers, authors, topics, concepts, etc.
-- Build relationships between entities
-- Create co-authorship networks
-- Generate collaboration statistics
+This process will:
+- **Fetch NLP-related papers** from OpenAlex API
+- **Create nodes** for papers, authors, topics, concepts, etc.
+- **Build relationships** between entities
+- **Create co-authorship networks**
+- **Generate collaboration statistics**
 
-### 3. Start the API Server
+#### Method: Semantic Citation Graph
+
+```bash
+# Build semantic citation graph
+cd core/graphs
+
+# Run semantic citation builder
+python semantic_citation.py
+```
+
+### 3. API Server Setup
 
 ```bash
 # Navigate to the API folder
 cd core/api
-
-# Install API dependencies
-pip install -r requirements.txt
 
 # Start the API server
 python main.py
@@ -76,35 +99,55 @@ The API will be available at:
 - Interactive docs: http://localhost:8000/docs
 - Alternative docs: http://localhost:8000/redoc
 
-## Core Components
+![alt text](/assets/fastapi.png)
 
-### Database Setup
+## Database Schema & Methods
 
-The Neo4j database is configured in `docker/docker-compose.yml` with:
-- Persistent data storage
-- APOC and Graph Data Science plugins
-- Optimized memory settings
-- Health checks
+### Node Types
 
-### Graph Builder (`core/semantic_link/build_graph.py`)
+- **`Paper`**: Academic papers with metadata
+- **`Author`**: Paper authors with affiliations
+- **`Topic`**: Research topics
 
-The graph builder:
-- Fetches papers from OpenAlex API
-- Creates a comprehensive graph with:
-  - Papers with metadata
-  - Authors and their affiliations
-  - Topics and concepts
-  - Citations and references
-  - Co-authorship networks
-- Generates collaboration statistics
+### Relationship Types
 
-### REST API (`core/api/`)
+- **`AUTHORED`**: Author wrote a paper
+- **`CITES`**: Paper cites another paper
+- **`HAS_TOPIC`**: Paper has a concept
+- **`SIMILAR_TO`**: Bibliographic and co-citation
 
-The API provides endpoints for:
-- Paper navigation: `/api/v1/navigation/paper/{paper_id}`
-- Graph exploration: `/api/v1/navigation/graph/{graph_id}`
-- System information: `/info`
-- Health checks: `/health`
+### Core Methods
+
+#### Graph Building Methods
+
+1. **Data Fetching**: 
+   - Connect to OpenAlex API
+   - Fetch papers by specified topics
+   - Extract metadata and relationships
+
+2. **Graph Construction**:
+   - Create nodes with proper constraints
+   - Build relationships between entities
+   - Calculate collaboration statistics
+
+3. **Semantic Analysis**:
+   - Extract concepts and topics
+   - Build semantic similarity relationships
+   - Generate citation networks
+
+#### API Methods
+
+1. **Paper Navigation**:
+   - `GET /api/v1/navigation/paper/{paper_id}`
+   - Returns paper details and connections
+
+2. **Graph Exploration**:
+   - `GET /api/v1/navigation/graph/{graph_id}`
+   - Returns subgraph for visualization
+
+3. **System Information**:
+   - `GET /info`
+   - `GET /health`
 
 ## Usage Examples
 
@@ -112,13 +155,15 @@ The API provides endpoints for:
 
 ```bash
 # Get a paper and its connections
-curl "http://localhost:8000/api/v1/navigation/paper/W587963984"
+curl "http://localhost:8000/api/v1/navigation/paper/W2752782242/similar"
 
 # Get a subgraph for visualization
-curl "http://localhost:8000/api/v1/navigation/graph/W587963984"
+curl "http://localhost:8000/api/v1/navigation/graph/W2752782242"
 
 # Get database statistics
 curl "http://localhost:8000/info"
+
+curl "http://localhost:8000/health"
 ```
 
 ### Exploring in Neo4j Browser
@@ -132,21 +177,22 @@ curl "http://localhost:8000/info"
 MATCH (p:Paper)-[:HAS_TOPIC]->(t:Topic {name: "Natural Language Processing Techniques"})
 RETURN p.title, p.year LIMIT 10
 
-// Find author collaboration networks
-MATCH (a1:Author)-[:CO_AUTHORED_WITH]-(a2:Author)
-RETURN a1.name, a2.name LIMIT 20
+// Find author and paper networks
+MATCH p=()-[r:AUTHORED]->() RETURN p LIMIT 25
 
 // Find most cited papers
 MATCH (p:Paper)
 RETURN p.title, p.cited_by_count
 ORDER BY p.cited_by_count DESC LIMIT 10
+
+// Find semantically papers
+MATCH (p1:Paper {id: "W2752782242"})-[:SIMILAR_TO]-(p2:Paper)
+RETURN p1.title, p2.title, p2.year LIMIT 10
 ```
 
 ## Configuration
 
 ### Environment Variables
-
-For the API, you can set these environment variables:
 
 ```bash
 export API_HOST=0.0.0.0
@@ -156,34 +202,10 @@ export API_DEBUG=false
 
 ### Graph Builder Configuration
 
-In `core/semantic_link/build_graph.py`, you can modify:
+In `core/graphs/graph_builder.py`, you can modify:
 - `MAX_PAPERS`: Number of papers to fetch (default: 1000)
 - `NLP_TOPICS`: Topics to filter papers
 - Neo4j connection settings
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Neo4j connection failed**:
-   - Ensure Docker is running
-   - Check if Neo4j container is up: `docker-compose -f docker/docker-compose.yml ps`
-   - Verify ports 7474 and 7687 are available
-
-2. **API import errors**:
-   - Install all requirements: `pip install -r core/api/requirements.txt`
-   - Ensure Neo4j is running before starting the API
-
-3. **Graph builder errors**:
-   - Check internet connection for OpenAlex API access
-   - Reduce `MAX_PAPERS` if memory issues occur
-   - Verify Neo4j credentials
-
-### Logs and Monitoring
-
-- Neo4j logs: `docker-compose -f docker/docker-compose.yml logs neo4j`
-- API logs: Check console output when running `python core/api/main.py`
-- Graph builder progress: Printed to console during execution
 
 ## Development
 
@@ -195,25 +217,29 @@ In `core/semantic_link/build_graph.py`, you can modify:
 
 ### Extending the Graph
 
-1. Modify `core/semantic_link/build_graph.py` to add new node types or relationships
+1. Modify `core/graphs/graph_builder.py` to add new node types or relationships
 2. Update constraints in the `create_constraints` function
 3. Re-run the graph builder to populate new data
 
-### Database Schema
+## Troubleshooting
 
-The graph includes these node types:
-- `Paper`: Academic papers with metadata
-- `Author`: Paper authors with affiliations
-- `Topic`: Research topics
-- `Concept`: Academic concepts
-- `Keyword`: Paper keywords
-- `Institution`: Author affiliations
+### Common Issues
 
-And these relationships:
-- `AUTHORED`: Author wrote a paper
-- `CO_AUTHORED_WITH`: Authors collaborated
-- `CITES`: Paper cites another paper
-- `RELATED_TO`: Semantically related papers
-- `HAS_TOPIC`: Paper has a topic
-- `HAS_CONCEPT`: Paper has a concept
-- `AFFILIATED_WITH`: Author affiliated with institution
+1. **Neo4j connection failed**:
+   - Ensure Docker is running
+   - Check if Neo4j container is up: `docker-compose -f docker/docker-compose.yml ps`
+   - Verify ports 7474 and 7687 are available
+
+2. **API import errors**:
+   - Install all requirements: `pip install -r requirements.txt`
+   - Ensure Neo4j is running before starting the API
+
+3. **Graph builder errors**:
+   - Check internet connection for OpenAlex API access
+   - Reduce `MAX_PAPERS` if memory issues occur
+   - Verify Neo4j credentials
+
+### Logs and Monitoring
+- Neo4j logs: `docker-compose -f docker/docker-compose.yml logs neo4j`
+- API logs: Check console output when running `python core/api/main.py`
+- Graph builder progress: Printed to console during execution

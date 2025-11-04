@@ -1,14 +1,13 @@
+import os
+import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import os
-import uvicorn
-from typing import Dict, List
 
-# Import the router from v1
-from v1.paper_navigation import router as paper_router, driver, run_query
+# Import the router from v1 folder
+from core.api.v1.paper_navigation import router as paper_router, driver, run_query
 
-# ===== CONFIG =====
+# config
 API_VERSION = "v1"
 API_PREFIX = f"/api/{API_VERSION}"
 APP_TITLE = "Semantic Paper Navigation API"
@@ -29,7 +28,7 @@ app = FastAPI(
 # ===== CORS CONFIGURATION =====
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify actual origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,8 +37,7 @@ app.add_middleware(
 # ===== INCLUDE ROUTERS =====
 app.include_router(
     paper_router,
-    prefix=f"{API_PREFIX}/navigation",
-    tags=["Paper Navigation"]
+    prefix=f"{API_PREFIX}/navigation"
 )
 
 # ===== ROOT ENDPOINTS =====
@@ -89,13 +87,13 @@ async def system_info():
         stats = {}
 
         # Count different node types
-        node_types = ["Paper", "Author", "Topic", "Concept", "Keyword", "Institution"]
+        node_types = ["Paper", "Author", "Topic"]
         for node_type in node_types:
             result = run_query(f"MATCH (n:{node_type}) RETURN count(n) as count")
             stats[f"{node_type.lower()}_count"] = result[0]["count"] if result else 0
 
         # Count relationship types
-        rel_types = ["CITES", "RELATED_TO", "AUTHORED", "CO_AUTHOR_WITH", "HAS_TOPIC", "HAS_CONCEPT"]
+        rel_types = ["CITES", "AUTHORED", "HAS_TOPIC"]
         for rel_type in rel_types:
             result = run_query(f"MATCH ()-[r:{rel_type}]-() RETURN count(r) as count")
             stats[f"{rel_type.lower()}_count"] = result[0]["count"] if result else 0
@@ -145,7 +143,7 @@ if __name__ == "__main__":
     print(f"API documentation available at http://{host}:{port}/docs")
 
     uvicorn.run(
-        "main:app",
+        "core.api.main:app",
         host=host,
         port=port,
         reload=debug,
